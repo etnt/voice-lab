@@ -17,6 +17,10 @@ audio with the managed local Raven runtime.
 - `audio.py` — WAV inspection, PCM16 conditioning/normalization, text
   normalization, and synthesis fingerprints.
 - `generate_voice.py` — one-shot CLI: reference WAV/MP3 + text → PCM16 WAV.
+- `make_sentences.py` — interactive batch helper: pick a voice, prompt for
+  sentences, write numbered MP3 takes via ffmpeg.
+- `voices/` — built-in in-house reference voices (Reginald Ashworth, Deja
+  Thoris); see `voices/README.md`.
 - `tools/setup_raven.py` — hash-pinned local builder/installer for Raven and
   its ONNX models (`--accept-model-terms` required).
 - `tools/compare_raven_profiles.py`, `tools/benchmark_raven_adapters.py` —
@@ -43,6 +47,18 @@ health check.
 Supported platforms: macOS arm64 and Linux x86_64.
 
 ## Generate one voice line
+
+The two built-in reference voices live in `voices/`. For batch work, use the
+interactive helper — pick a voice, then type sentences one at a time and get
+`out/1-out.mp3`, `out/2-out.mp3`, ... (numbering continues across runs; the
+intermediate PCM16 WAV is kept next to each MP3):
+
+```sh
+python3 make_sentences.py
+python3 make_sentences.py --voice voices/deja-thoris.wav --out-dir takes/
+```
+
+For a single line directly:
 
 ```sh
 python3 generate_voice.py \
