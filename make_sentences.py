@@ -26,7 +26,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                     "1-out.mp3, 2-out.mp3, ... using Pocket TTS Raven."
     )
     parser.add_argument("--voice", type=Path,
-                        help="skip voice selection: path to a WAV or MP3 reference")
+                        help="skip initial voice selection: path to a WAV or MP3 "
+                             "reference; the voice can still be switched per turn")
     parser.add_argument("--voices-dir", type=Path, default=Path("voices"),
                         help="directory of reference voices to choose from "
                              "(default: voices/)")
@@ -41,30 +42,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def choose_voice(args: argparse.Namespace) -> Path:
+def choose_voice(args: argparse.Namespace) -> tuple[Path, list[Path]]:
+    if args.voices_dir.expanduser().resolve().is_dir():
+        references = sorted(
+            path for path in args.voices_dir.expanduser().resolve().iterdir()
+            if path.suffix.lower() in {".wav", ".mp3"}
+        )
+    else:
+        references = []
     if args.voice is not None:
         reference = args.voice.expanduser().resolve()
         if not reference.is_file() or reference.suffix.lower() not in {".wav", ".mp3"}:
             raise ValueError("--voice must be an existing WAV or MP3 file")
-        return reference
-
-    references = sorted(
-        path for path in args.voices_dir.expanduser().resolve().iterdir()
-        if path.suffix.lower() in {".wav", ".mp3"}
-    ) if args.voices_dir.expanduser().resolve().is_dir() else []
-    if not references:
-        raise ValueError(
-            f"no WAV or MP3 references found in {args.voices_dir}; "
-            "pass --voice explicitly"
-        )
-    print("Available voices:")
-    for index, reference in enumerate(references, start=1):
-        print(f"  {index}. {reference.stem}")
-    while True:
-        choice = input(f"Choose voice [1-{len(references)}]: ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(references):
-            return references[int(choice) - 1]
-        print("Please enter a number from the list.")
+        if reference not in references:
+            references.append(reference)
+    else:
+        if not references:
+            raise ValueError(
+                f"no WAV or MP3 references found in {args.voices_dir}; "
+                "pass --voice explicitly"
+            )
+        print("Available voices:")
+        for index, reference in enumerate(references, start=1):
+            print(f"  {index}. {reference.stem}")
+        while True:
+            choice = input(f"Choose starting voice [1-{len(references)}]: ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(references):
+                return references[int(choice) - 1], references
+            print("Please enter a number from the list.")
+    return reference, references
 
 
 def next_sentence_index(out_dir: Path) -> int:
@@ -90,14 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.lsd_steps < 1 or args.threads < 0:
         raise ValueError("--lsd-steps must be positive and --threads non-negative")
 
-    reference = choose_voice(args)
-    voice_id = reference.stem
-    if not VOICE_ID_PATTERN.fullmatch(voice_id):
-        raise ValueError(
-            f"voice id {voice_id!r} must use filename-safe letters, digits, "
-            "'.', '_' or '-'"
-        )
-    print(f"Voice: {reference} (id {voice_id!r})")
+    reference, references = choose_voice(args)
+    current = reference
+    print(f"Voice: {current} (id {current.stem!r})")
+    print("At the sentence prompt: type a sentence to synthesize it, enter a "
+          "voice number to switch voices, or an empty line to quit.")
 
     installation = load_raven_installation()
     settings = {
@@ -115,24 +118,39 @@ def main(argv: list[str] | None = None) -> int:
         voices_dir=voices_dir,
         settings=settings,
     )
-    if provider.base_url is None:
-        provider.stage_voice(voice_id, reference)
 
     index = next_sentence_index(out_dir)
-    print("Enter sentences one at a time; an empty line quits.")
+    voices_dir.mkdir(parents=True, exist_ok=True)
+    for option in references:
+        if not VOICE_ID_PATTERN.fullmatch(option.stem):
+            raise ValueError(
+                f"voice id {option.stem!r} must use filename-safe letters, "
+                "digits, '.', '_' or '-'"
+            )
+        provider.stage_voice(option.stem, option)
     with provider:
         while True:
             try:
-                text = input("sentence> ").strip()
+                text = input(f"[{current.stem}] sentence> ").strip()
             except EOFError:
                 break
             if not text:
                 break
+            if text.isdigit():
+                if 1 <= int(text) <= len(references):
+                    current = references[int(text) - 1]
+                    print(f"Voice: {current} (id {current.stem!r})")
+                    continue
+                print("Please enter a voice number from the list:")
+                for number, option in enumerate(references, start=1):
+                    print(f"  {number}. {option.stem}")
+                continue
+            voice_id = current.stem
             fingerprint = canonical_synthesis_fingerprint(
                 {
                     "text": text,
                     "voice_id": voice_id,
-                    "reference_audio_sha256": sha256_file(reference),
+                    "reference_audio_sha256": sha256_file(current),
                     "engine_revision": installation.raven_revision,
                     "onnx_runtime_version": installation.onnx_runtime_version,
                     "model_manifest_sha256": installation.model_manifest_sha256,

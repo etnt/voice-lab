@@ -58,6 +58,10 @@ python3 make_sentences.py
 python3 make_sentences.py --voice voices/deja-thoris.wav --out-dir takes/
 ```
 
+The prompt shows the active voice (`[deja-thoris] sentence>`). Type a sentence
+to synthesize it with that voice, or enter a voice number (e.g. `2`) to switch
+speakers mid-discussion; an empty line quits.
+
 For a single line directly:
 
 ```sh
