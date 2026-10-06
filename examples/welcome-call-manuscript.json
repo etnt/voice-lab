@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "title": "Voice Lab, episode one",
+  "output_dir": "out",
+  "settings": { "precision": "int8" },
+  "voices": {
+    "reginald": {
+      "reference": "../voices/reginald-ashworth.wav"
+    },
+    "deja": {
+      "reference": "../voices/deja-thoris.wav"
+    }
+  },
+  "lines": [
+    { "voice": "reginald", "text": "Welcome to Voice Lab, the show where we hand a script a stack of text and get a finished conversation back. I am Reginald." },
+    { "voice": "deja", "text": "And I am Deja. Today we are looking at the tool that made this very episode: two Python scripts, a manuscript, and nothing else." },
+    { "voice": "reginald", "text": "Voice Lab clones a voice from one consented recording and speaks any text with it, and it all runs locally on your machine." },
+    { "voice": "deja", "text": "There are two entry points. Generate voice dot py is the one-shot helper: one voice file, one sentence, one audio file." },
+    { "voice": "reginald", "text": "Make sentences dot py is the interactive one. You pick a voice, type lines at a prompt, and switch speakers by entering a number." },
+    { "voice": "deja", "text": "But today we are using the third option, generate manuscript dot py, which renders a whole JSON manuscript in one run." },
+    { "voice": "reginald", "text": "A manuscript declares named voices, each pointing at a consented WAV or MP3 reference, and then an ordered list of lines that cite those voices." },
+    { "voice": "deja", "text": "The format itself is written up as a skill file, in the agents skills folder, so an agent can read it and write a valid manuscript for you." },
+    { "voice": "reginald", "text": "That means you can describe the scene in plain English, and the skill defines the rules: which fields exist, how settings nest, and how errors are reported." },
+    { "voice": "deja", "text": "Every episode you hear is one of these manuscripts. Two voices, eleven lines, and a single command that also joins everything into one file." },
+    { "voice": "reginald", "text": "So install it by initializing the submodule, running the Raven setup script, and accepting the model terms. Then render your first manuscript." },
+    { "voice": "deja", "text": "That is Voice Lab for this episode. Write your script, pick your voices, and press play. Goodbye." }
+  ]
+}

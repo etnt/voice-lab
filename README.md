@@ -3,32 +3,11 @@
 Local voice cloning and speech generation with Pocket TTS Raven.
 
 `voice-lab` is the standalone home of the Pocket TTS Raven voice pipeline that
-was previously embedded in the ai-video-generator project. It deals only with
-cloning a voice from a consented reference recording and generating speech
-audio with the managed local Raven runtime.
+was previously embedded in another project. It deals only with cloning a voice
+from a consented reference recording and generating speech audio with the
+managed local Raven runtime.
 
-## Layout
-
-- `voice_providers/pocket_tts_raven.py` — persistent loopback HTTP provider
-  that starts, health-checks, and drives the local Raven runtime; validates
-  manifests by path, size, and SHA-256; stages and conditions voice references.
-- `voice_providers/__init__.py` — `VoiceRequest`/`VoiceResult`/`VoiceProvider`
-  contracts.
-- `audio.py` — WAV inspection, PCM16 conditioning/normalization, text
-  normalization, and synthesis fingerprints.
-- `generate_voice.py` — one-shot CLI: reference WAV/MP3 + text → PCM16 WAV.
-- `make_sentences.py` — interactive batch helper: pick a voice, prompt for
-  sentences, write numbered MP3 takes via ffmpeg.
-- `voices/` — built-in in-house reference voices (Reginald Ashworth, Deja
-  Thoris); see `voices/README.md`.
-- `tools/setup_raven.py` — hash-pinned local builder/installer for Raven and
-  its ONNX models (`--accept-model-terms` required).
-- `tools/compare_raven_profiles.py`, `tools/benchmark_raven_adapters.py` —
-  profile comparison and adapter benchmarking utilities.
-- `tests/test_pocket_tts_raven.py` — provider, installer-validation, and
-  adapter test suite.
-- `vendor/pocket-tts-raven` — Raven source, pinned as a Git submodule.
-- `docs/` — distribution review and adapter benchmark documentation.
+[a podcast-style demo](voice_lab.mp3):
 
 ## Setup
 
@@ -55,7 +34,6 @@ intermediate PCM16 WAV is kept next to each MP3):
 
 ```sh
 python3 make_sentences.py
-python3 make_sentences.py --voice voices/deja-thoris.wav --out-dir takes/
 ```
 
 The prompt shows the active voice (`[deja-thoris] sentence>`). Type a sentence
@@ -76,6 +54,49 @@ Options: `--precision int8|fp32`, `--temperature`, `--lsd-steps`, `--threads`,
 MP3 file with an explicit lawful consent basis; see
 `docs/pocket-tts-raven-distribution-review.md` for model attribution, consent
 requirements, and the prebuilt-release gate.
+
+## Render a manuscript
+
+For scripted, multi-voice work, define the voices and lines in one JSON
+manuscript and render it in one run. The JSON format is documented in the
+`manuscript-voice` skill (`.agents/skills/manuscript-voice/SKILL.md`), and
+`examples/welcome-call-manuscript.json` shows a working example.
+
+```sh
+python3 generate_manuscript.py manuscript.json --dry-run   # validate + plan
+python3 generate_manuscript.py manuscript.json --concat out/manuscript.mp3
+```
+
+This writes one numbered MP3 per line (`001-narrator.mp3`, ...) and can join
+all lines into a single file with `--concat`.
+
+## Layout
+
+- `voice_providers/pocket_tts_raven.py` — persistent loopback HTTP provider
+  that starts, health-checks, and drives the local Raven runtime; validates
+  manifests by path, size, and SHA-256; stages and conditions voice references.
+- `voice_providers/__init__.py` — `VoiceRequest`/`VoiceResult`/`VoiceProvider`
+  contracts.
+- `audio.py` — WAV inspection, PCM16 conditioning/normalization, text
+  normalization, and synthesis fingerprints.
+- `generate_voice.py` — one-shot CLI: reference WAV/MP3 + text → PCM16 WAV.
+- `make_sentences.py` — interactive batch helper: pick a voice, prompt for
+  sentences, write numbered MP3 takes via ffmpeg.
+- `generate_manuscript.py` — batch CLI: JSON manuscript (named voices +
+  ordered lines) → one MP3 per line, optional `--concat` join.
+- `.agents/skills/manuscript-voice/SKILL.md` — format specification for
+  manuscript JSON files, discoverable as a project skill.
+- `examples/welcome-call-manuscript.json` — example two-voice manuscript.
+- `voices/` — built-in in-house reference voices (Reginald Ashworth, Deja
+  Thoris); see `voices/README.md`.
+- `tools/setup_raven.py` — hash-pinned local builder/installer for Raven and
+  its ONNX models (`--accept-model-terms` required).
+- `tools/compare_raven_profiles.py`, `tools/benchmark_raven_adapters.py` —
+  profile comparison and adapter benchmarking utilities.
+- `tests/test_pocket_tts_raven.py` — provider, installer-validation, and
+  adapter test suite.
+- `vendor/pocket-tts-raven` — Raven source, pinned as a Git submodule.
+- `docs/` — distribution review and adapter benchmark documentation.
 
 ## Benchmarking
 
