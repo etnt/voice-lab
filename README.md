@@ -7,7 +7,7 @@ was previously embedded in another project. It deals only with cloning a voice
 from a consented reference recording and generating speech audio with the
 managed local Raven runtime.
 
-[a podcast-style demo](voice_lab.mp3):
+[a podcast-style demo](voice_lab.mp3) rendered by `generate_manuscript.py` from `examples/welcome-call-manuscript.json`
 
 ## Setup
 
